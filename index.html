@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b4f6c">
+<title>Combustible</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>Bitácora de combustible</h1>
+  <p class="sub" id="hoy"></p>
+</div></header>
+
+<main class="wrap">
+  <section class="card" id="login" hidden>
+    <h2>Ingresa tu PIN</h2>
+    <p class="legend">Con el PIN de registro puedes anotar y editar. Con el PIN de lectura solo puedes mirar.</p>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" aria-label="PIN">
+    <button class="btn" id="entrar" type="button">Entrar</button>
+    <p class="msg" id="lmsg" role="status"></p>
+  </section>
+
+  <div id="main" hidden>
+    <div class="aviso" id="aviso" hidden></div>
+    <section class="card" aria-labelledby="t-reg">
+      <div class="rb">
+        <h2 id="t-reg">Registro del día</h2>
+        <input type="date" id="fecha" aria-label="Fecha del registro">
+      </div>
+      <div class="veh" id="veh" role="radiogroup" aria-label="Vehículo"></div>
+      <button class="btn ghost man" id="manual" type="button">Ingreso manual</button>
+      <div class="gauges">
+        <div class="gauge" id="g-in">
+          <span class="gt">Lo recibí con</span><b class="gv" id="v-in"></b>
+          <div class="arcwrap"><div id="arc-in"></div>
+            <div class="ends"><button type="button" data-g="in" data-set="0">Vacío</button><button type="button" class="clear" data-g="in" data-set="x">Quitar</button><button type="button" data-g="in" data-set="8">Lleno</button></div></div>
+          <div class="lcd"><input id="num-in" type="number" inputmode="decimal" step="any" min="0" placeholder="Ingresa el número" aria-label="Número al recibir"></div>
+        </div>
+        <div class="gauge" id="g-out">
+          <span class="gt">Lo entregué con</span><b class="gv" id="v-out"></b>
+          <div class="arcwrap"><div id="arc-out"></div>
+            <div class="ends"><button type="button" data-g="out" data-set="0">Vacío</button><button type="button" class="clear" data-g="out" data-set="x">Quitar</button><button type="button" data-g="out" data-set="8">Lleno</button></div></div>
+          <div class="lcd"><input id="num-out" type="number" inputmode="decimal" step="any" min="0" placeholder="Ingresa el número" aria-label="Número al entregar"></div>
+        </div>
+      </div>
+      <label class="lbl" for="nota">Nota (opcional)</label>
+      <input id="nota" type="text" maxlength="140" placeholder="Ej.: cargué combustible a mediodía">
+      <button class="btn" id="guardar" type="button">Guardar registro</button>
+      <p class="msg" id="msg" role="status"></p>
+    </section>
+
+    <section class="card" aria-labelledby="t-res">
+      <div class="rb"><h2 id="t-res">Resumen del mes</h2><select id="mes" aria-label="Mes"></select></div>
+      <div id="resumen"></div>
+    </section>
+
+    <section class="card" aria-labelledby="t-his">
+      <div class="rb"><h2 id="t-his">Historial</h2><button class="link" id="copiar" type="button">Copiar como tabla</button></div>
+      <ul class="hist" id="hist"></ul>
+    </section>
+
+    <p class="foot"><span id="sync"></span> · <button class="link" id="salir" type="button">Cambiar PIN</button></p>
+  </div>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+    <div class="mtop"><h2 id="mtitle">Ingreso manual</h2><button class="link" id="mclose" type="button">Cerrar</button></div>
+    <p class="legend">Toca los días que quieres registrar. Puedes cambiar de mes con las flechas.</p>
+    <div class="mhead"><button class="mnav" type="button" data-mnav="-1" aria-label="Mes anterior">‹</button><b id="mmes"></b><button class="mnav" type="button" data-mnav="1" id="mnext" aria-label="Mes siguiente">›</button></div>
+    <div class="wk"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    <div class="cal" id="mcal"></div>
+    <p class="legend">Punto lleno: ya registrado con este auto. Punto vacío: registrado con el otro auto (si lo eliges, se reemplaza).</p>
+    <div class="mrows" id="mrows"></div>
+    <p class="msg" id="mmsg" role="status"></p>
+    <div class="mbtns"><button class="btn ghost" id="mcancel" type="button">Cancelar</button><button class="btn" id="msave" type="button">Guardar</button></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
