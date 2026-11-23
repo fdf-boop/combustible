@@ -48,9 +48,15 @@ function setEntries(list) {
   S.entries = list.map(fromSrv).filter(e => e.v >= 0 && /^\d{4}-\d{2}-\d{2}$/.test(e.d));
   return true;
 }
+function pushTrips(r) { window.APP.trips = (r && r.trips) || []; window.APP.cfg = (r && r.cfg) || null; if (window.Viajes) window.Viajes.update(window.APP.trips, ROL, window.APP.cfg); }
 function stamp(txt) { $('sync').textContent = txt || 'Actualizado ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }); }
 
 /* ---------- acceso ---------- */
+function errMsg(r) {
+  if (r.error === 'bloqueado') return 'Demasiados intentos fallidos. La app quedó bloqueada por 15 minutos.';
+  if (r.error === 'pin') return 'El PIN no es correcto.' + (r.quedan ? ` Te ${r.quedan === 1 ? 'queda 1 intento' : 'quedan ' + r.quedan + ' intentos'}.` : '');
+  return 'La planilla respondió con un error.';
+}
 function showLogin(msg) {
   $('main').hidden = true; $('login').hidden = false;
   const l = $('lmsg'); l.className = 'msg' + (msg ? ' err' : ''); l.textContent = msg || '';
@@ -70,22 +76,22 @@ async function entrar() {
   PIN = p;
   try {
     const r = await apiGet();
-    if (!r.ok) { PIN = ''; showLogin(r.error === 'pin' ? 'El PIN no es correcto.' : 'La planilla respondió con un error.'); return; }
+    if (!r.ok) { PIN = ''; showLogin(errMsg(r)); return; }
     try { localStorage.setItem('pin', PIN); } catch (e) {}
     ROL = r.rol; lastJSON = ''; setEntries(r.entries || []);
-    $('pin').value = ''; showMain(); applyRole(); drawAll(); stamp();
+    $('pin').value = ''; showMain(); applyRole(); drawAll(); pushTrips(r); stamp();
   } catch (e) { PIN = ''; showLogin('No se pudo conectar. Revisa tu internet o la dirección en config.js.'); }
   finally { $('entrar').disabled = false; }
 }
-function salir() { PIN = ''; ROL = null; try { localStorage.removeItem('pin'); } catch (e) {} showLogin(''); }
+function salir() { PIN = ''; ROL = null; try { localStorage.removeItem('pin'); } catch (e) {} pushTrips(null); showLogin(''); }
 async function refresh() {
   if (!PIN || busy || M) return;
   try {
     const r = await apiGet();
-    if (!r.ok) { if (r.error === 'pin') salir(); return; }
+    if (!r.ok) { if (r.error === 'pin') salir(); else if (r.error === 'bloqueado') stamp('Bloqueada 15 min por intentos fallidos'); return; }
     if (r.rol !== ROL) { ROL = r.rol; applyRole(); }
     if (setEntries(r.entries || [])) { drawVeh(); drawMes(); drawResumen(); drawHist(); }
-    stamp();
+    pushTrips(r); stamp();
   } catch (e) { stamp('Sin conexión'); }
 }
 
@@ -276,11 +282,18 @@ $('copiar').addEventListener('click', async () => {
   catch (e) { $('copiar').textContent = 'No se pudo copiar'; }
 });
 
+/* ---------- compartido con viajes.js ---------- */
+window.APP = {
+  VEH, $, esc, trips: [],
+  getPin: () => PIN, getRol: () => ROL, apiUrl: API,
+  api: apiPost, refresh: () => refresh()
+};
+
 /* ---------- inicio ---------- */
 $('hoy').textContent = now.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 $('fecha').value = today;
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-setInterval(() => { if (!document.hidden) refresh(); }, 20000);
+setInterval(() => { if (!document.hidden) refresh(); }, 15000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
 if (!API || API.indexOf('PEGA_AQUI') >= 0) {
@@ -292,8 +305,8 @@ if (!API || API.indexOf('PEGA_AQUI') >= 0) {
     showMain(); stamp('Cargando…');
     try {
       const r = await apiGet();
-      if (!r.ok) { salir(); if (r.error !== 'pin') showLogin('La planilla respondió con un error.'); return; }
-      ROL = r.rol; applyRole(); setEntries(r.entries || []); drawAll(); stamp();
+      if (!r.ok) { if (r.error === 'bloqueado') { showLogin(errMsg(r)); return; } salir(); showLogin(errMsg(r)); return; }
+      ROL = r.rol; applyRole(); setEntries(r.entries || []); drawAll(); pushTrips(r); stamp();
     } catch (e) { drawAll(); stamp('Sin conexión'); }
   })();
 }

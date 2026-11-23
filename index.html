@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b4f6c">
+<meta name="theme-color" content="#ffffff">
 <title>Combustible</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -29,6 +30,11 @@
 
   <div id="main" hidden>
     <div class="aviso" id="aviso" hidden></div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button type="button" role="tab" data-tab="comb" aria-selected="true">Combustible</button>
+      <button type="button" role="tab" data-tab="viajes" aria-selected="false">Viajes <i class="dot" id="v-dotab" hidden></i></button>
+    </nav>
+    <div id="tab-comb">
     <section class="card" aria-labelledby="t-reg">
       <div class="rb">
         <h2 id="t-reg">Registro del día</h2>
@@ -65,6 +71,69 @@
       <div class="rb"><h2 id="t-his">Historial</h2><button class="link" id="copiar" type="button">Copiar como tabla</button></div>
       <ul class="hist" id="hist"></ul>
     </section>
+    </div>
+
+    <div id="tab-viajes" hidden>
+      <section class="card" id="v-live" hidden aria-labelledby="v-ltitle">
+        <p class="live-tag"><i class="dot"></i>En viaje ahora</p>
+        <h2 id="v-ltitle"></h2>
+        <p class="legend" id="v-lsub"></p>
+        <div class="clock" id="v-clock">00:00:00</div>
+        <p class="lstats" id="v-lstats"></p>
+        <div class="vmap" id="v-map"></div>
+        <div class="maprow"><p class="gps" id="v-pts"></p><button class="link" type="button" id="v-center" hidden>Centrar mapa</button></div>
+        <p class="gps" id="v-gps"></p>
+        <button class="btn ghost" type="button" id="v-track" hidden>Compartir ubicación desde este celular</button>
+        <p class="legend" id="v-hint">Deja la app abierta y la pantalla encendida para que el viaje se vea en el mapa. No uses el celular mientras manejas.</p>
+        <button class="btn stop" type="button" id="v-end">Terminar viaje</button>
+        <p class="msg" id="v-msg2" role="status"></p>
+      </section>
+
+      <section class="card" id="v-new" aria-labelledby="v-ntitle">
+        <h2 id="v-ntitle" style="margin-bottom:12px">Nuevo viaje</h2>
+        <div class="veh three" id="v-veh" role="radiogroup" aria-label="Vehículo del viaje"></div>
+        <div class="row2">
+          <label>Origen<input id="v-orig" list="v-places" maxlength="60" placeholder="Ej.: Casa" autocomplete="off"></label>
+          <button type="button" class="swap" id="v-swap" aria-label="Invertir origen y destino">⇄</button>
+          <label>Destino<input id="v-dest" list="v-places" maxlength="60" placeholder="Ej.: Planta La Romana" autocomplete="off"></label>
+        </div>
+        <datalist id="v-places"></datalist>
+        <div class="taxi-f" id="v-taxi" hidden>
+          <label>Valor del viaje<input id="v-valor" type="number" inputmode="numeric" min="0" step="1" placeholder="$"></label>
+          <label>Fecha<input id="v-tfecha" type="date"></label>
+        </div>
+        <div class="chips" id="v-chips"></div>
+        <button class="btn" type="button" id="v-start">Iniciar viaje</button>
+        <button class="btn" type="button" id="v-taxisave" hidden>Guardar viaje en taxi</button>
+        <p class="msg" id="v-msg" role="status"></p>
+      </section>
+
+      <section class="card" aria-labelledby="g-title">
+        <div class="rb"><h2 id="g-title">Gastos</h2><select id="g-mes" aria-label="Período"></select></div>
+        <div class="gtotal"><small>Total gastado</small><strong id="g-total">$0</strong><span id="g-sub"></span></div>
+        <div class="gtiles" id="g-tiles"></div>
+        <p class="legend" id="g-note"></p>
+        <h3 class="h3" id="g-rtitle">Registro</h3>
+        <ul class="hist" id="g-list"></ul>
+      </section>
+
+      <section class="card" aria-labelledby="r-title">
+        <h2 id="r-title">Ida y vuelta por recorrido</h2>
+        <div id="v-stats"></div>
+      </section>
+
+      <section class="card" id="v-cfg" aria-labelledby="c-title">
+        <h2 id="c-title">Rendimiento y precio</h2>
+        <div class="cfg">
+          <label>Toyota (km/l)<input id="c-toy" type="number" inputmode="decimal" step="0.1" min="0"></label>
+          <label>Swift (km/l)<input id="c-swi" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Por confirmar"></label>
+          <label>Bencina ($/litro)<input id="c-pre" type="number" inputmode="numeric" step="1" min="0"></label>
+        </div>
+        <button class="btn ghost" type="button" id="c-save">Guardar</button>
+        <p class="msg" id="c-msg" role="status"></p>
+        <p class="legend">Gasto de cada viaje en auto = kilómetros recorridos ÷ rendimiento × precio del litro. Los kilómetros los mide el GPS durante el viaje.</p>
+      </section>
+    </div>
 
     <p class="foot"><span id="sync"></span> · <button class="link" id="salir" type="button">Cambiar PIN</button></p>
   </div>
@@ -84,7 +153,18 @@
   </div>
 </div>
 
+<div class="sheet" id="v-sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="v-stitle">
+    <div class="mtop"><h2 id="v-stitle">Ruta</h2><button class="link" id="v-sclose" type="button">Cerrar</button></div>
+    <p class="legend" id="v-sinfo"></p>
+    <div class="vmap tall" id="v-map2"></div>
+    <p class="msg" id="v-smsg" role="status"></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script src="viajes.js"></script>
 </body>
 </html>
