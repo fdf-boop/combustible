@@ -11,7 +11,7 @@ const TAXI = TV.length - 1;
 const pic = i => TV[i].img ? `<img class="photo" src="${TV[i].img}" alt="">` : TAXI_SVG;
 
 let trips = [], rol = null, cfg = { rend: {}, precio: '' }, selV = null, armDel = null, armEnd = false;
-let gMes = null, gVeh = 0, kmEdit = null;
+let gMes = null, gVeh = 0, kmEdit = null, E = null;
 let map = null, line = null, marker = null, follow = true;
 let map2 = null, line2 = null;
 let watchId = null, buf = [], lastSend = 0, lastFix = null, wake = null, tick = null, sending = false;
@@ -243,6 +243,47 @@ async function verRuta(id) {
     else $('v-smsg').textContent = 'Este viaje no tiene ruta guardada.';
   } catch (e) { $('v-smsg').textContent = 'No se pudo cargar la ruta.'; }
 }
+/* ---------- editar viaje ---------- */
+function drawEdit() {
+  $('e-veh').innerHTML = TV.map((x, i) => `<button type="button" role="radio" aria-checked="${E.v === i}" data-ev="${i}">${pic(i)}<span class="vn">${esc(x.name)}</span></button>`).join('');
+  const taxi = E.v === TAXI, activo = E.t.estado === 'activo';
+  $('e-vall').hidden = !taxi;
+  $('e-kml').hidden = taxi || activo;
+}
+function abrirEdit(id) {
+  const t = trips.find(x => x.id === id); if (!t) return;
+  E = { t, v: Math.max(0, TV.findIndex(x => x.name === t.vehiculo)) };
+  $('e-info').textContent = (t.estado === 'activo' ? 'Viaje en curso · salió ' : new Date(t.inicio).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ') + tTime(t.inicio);
+  $('e-orig').value = t.origen; $('e-dest').value = t.destino;
+  $('e-km').value = num(t.km) ?? ''; $('e-valor').value = num(t.valor) ?? '';
+  $('e-msg').textContent = '';
+  drawEdit();
+  $('e-sheet').hidden = false; document.body.style.overflow = 'hidden';
+}
+function cerrarEdit() { $('e-sheet').hidden = true; document.body.style.overflow = ''; E = null; }
+async function guardarEdit() {
+  const o = $('e-orig').value.trim(), d = $('e-dest').value.trim(), veh = TV[E.v].name;
+  if (!o || !d) { msg('e-msg', 'Escribe el origen y el destino.', true); return; }
+  const edit = { vehiculo: veh, origen: o, destino: d };
+  if (E.v === TAXI) {
+    const val = num($('e-valor').value);
+    if (!val || val <= 0) { msg('e-msg', 'Ingresa el valor del viaje en taxi.', true); return; }
+    edit.valor = val;
+  } else if (E.t.estado !== 'activo' && $('e-km').value !== '') {
+    const km = num($('e-km').value);
+    if (km == null || km < 0) { msg('e-msg', 'Revisa los kilómetros.', true); return; }
+    edit.km = km;
+  }
+  $('e-save').disabled = true; msg('e-msg', 'Guardando…');
+  try {
+    const r = await A.api({ action: 'tripEdit', id: E.t.id, edit });
+    if (!r.ok) throw new Error(r.error);
+    setTrips(r);
+    if (E.t.estado !== 'activo') gVeh = E.v;
+    cerrarEdit(); render();
+  } catch (e) { msg('e-msg', e.message === 'pin' ? 'Tu PIN no permite editar.' : 'No se pudo guardar. Revisa tu conexión.', true); }
+  finally { $('e-save').disabled = false; }
+}
 function cerrarRuta() { $('v-sheet').hidden = true; document.body.style.overflow = ''; }
 
 /* ---------- dibujo ---------- */
@@ -291,7 +332,7 @@ function drawGastos() {
     const amt = c != null ? `<div class="amt">${money(c)}</div>` : `<div class="amt na">${!isTaxi(t) && km == null ? 'Sin km' : 'Falta rendimiento'}</div>`;
     const kmFix = ed && !isTaxi(t) && km == null ? (kmEdit === t.id ? `<div class="kmrow"><input id="km-${t.id}" type="number" inputmode="decimal" min="0" step="0.1" placeholder="km"><button class="link" type="button" data-kmsave="${t.id}">Guardar</button></div>` : `<button class="link" type="button" data-kmedit="${t.id}">Agregar km</button>`) : '';
     const del = !ed ? '' : armDel === t.id ? `<button class="link danger" type="button" data-vdel="${t.id}">Sí, eliminar</button><button class="link" type="button" data-vcancel="1">Cancelar</button>` : `<button class="link danger" type="button" data-varm="${t.id}">Eliminar</button>`;
-    return `<li><div class="dd"><b>${d.getDate()}</b><span>${d.toLocaleDateString('es-CL', { weekday: 'short' }).replace('.', '')}</span></div><div><div class="tv-r">${esc(t.origen)} → ${esc(t.destino)}</div><div class="tv-m">${meta}</div>${amt}</div><div class="vacts">${isTaxi(t) ? '' : `<button class="link" type="button" data-vr="${t.id}">Ver ruta</button>`}${kmFix}${del}</div></li>`;
+    return `<li><div class="dd"><b>${d.getDate()}</b><span>${d.toLocaleDateString('es-CL', { weekday: 'short' }).replace('.', '')}</span></div><div><div class="tv-r">${esc(t.origen)} → ${esc(t.destino)}</div><div class="tv-m">${meta}</div>${amt}</div><div class="vacts">${ed ? `<button class="link" type="button" data-vedit="${t.id}">Editar</button>` : ''}${isTaxi(t) ? '' : `<button class="link" type="button" data-vr="${t.id}">Ver ruta</button>`}${kmFix}${del}</div></li>`;
   }).join('');
 }
 function drawPairs() {
@@ -332,6 +373,7 @@ function render() {
     $('v-lsub').textContent = `${a.vehiculo} · salió a las ${tTime(a.inicio)}`;
     $('v-clock').textContent = clock(durMs(a));
     $('v-end').hidden = !ed;
+    $('v-ledit').hidden = !ed;
     $('v-track').hidden = !ed || tracking();
     $('v-hint').hidden = !ed;
     if (!ed) setGps('Ubicación en vivo de quien maneja.');
@@ -362,12 +404,13 @@ function update(list, r, c) {
   else if (!a && ls('tripId')) { lsSet('tripId', null); lsSet('tripBuf', null); buf = []; }
   if (selV == null) { const last = trips.filter(t => !isTaxi(t)).sort((x, y) => y.inicio.localeCompare(x.inicio))[0]; if (last) selV = TV.findIndex(v => v.name === last.vehiculo); if (selV < 0) selV = null; }
   $('v-dotab').hidden = !a;
-  if (!$('tab-viajes').hidden && !kmEdit) render();
+  if (!$('tab-viajes').hidden && !kmEdit && !E) render();
 }
 
 /* ---------- eventos ---------- */
 document.addEventListener('click', ev => {
   if (ev.target.id === 'v-sheet') { cerrarRuta(); return; }
+  if (ev.target.id === 'e-sheet') { cerrarEdit(); return; }
   const t = ev.target.closest('button'); if (!t) return;
   const ds = t.dataset;
   if (ds.tab) { setTab(ds.tab); return; }
@@ -388,6 +431,12 @@ document.addEventListener('click', ev => {
   if (t.id === 'v-sclose') { cerrarRuta(); return; }
   if (t.id === 'c-save') { saveCfg(); return; }
   if (ds.vr) { verRuta(ds.vr); return; }
+  if (ds.vedit) { abrirEdit(ds.vedit); return; }
+  if (t.id === 'v-ledit') { const a = active(); if (a) abrirEdit(a.id); return; }
+  if (ds.ev != null && E) { E.v = Number(ds.ev); drawEdit(); return; }
+  if (t.id === 'e-swap') { const o = $('e-orig').value; $('e-orig').value = $('e-dest').value; $('e-dest').value = o; return; }
+  if (t.id === 'e-save') { guardarEdit(); return; }
+  if (t.id === 'e-close' || t.id === 'e-cancel') { cerrarEdit(); return; }
   if (ds.kmedit) { kmEdit = ds.kmedit; drawGastos(); const i = $('km-' + kmEdit); if (i) i.focus(); return; }
   if (ds.kmsave) { saveKm(ds.kmsave); return; }
   if (ds.varm) { armDel = ds.varm; drawGastos(); return; }
@@ -395,7 +444,7 @@ document.addEventListener('click', ev => {
   if (ds.vdel) { borrar(ds.vdel); return; }
 });
 $('g-mes').addEventListener('change', e => { gMes = e.target.value; armDel = null; drawGastos(); });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('v-sheet').hidden) cerrarRuta(); });
+document.addEventListener('keydown', ev => { if (ev.key !== 'Escape') return; if (!$('v-sheet').hidden) cerrarRuta(); if (!$('e-sheet').hidden) cerrarEdit(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && tracking()) { keepAwake(); flush(); } });
 
 window.Viajes = { update };

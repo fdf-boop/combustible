@@ -1,4 +1,4 @@
-const CACHE = 'combustible-v3';
+const CACHE = 'combustible-v4';
 const ARCHIVOS = ['./', 'index.html', 'styles.css', 'app.js', 'viajes.js', 'config.js', 'manifest.webmanifest',
   'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'rav4.jpg', 'swift.jpg'];
 

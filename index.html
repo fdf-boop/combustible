@@ -76,7 +76,7 @@
     <div id="tab-viajes" hidden>
       <section class="card" id="v-live" hidden aria-labelledby="v-ltitle">
         <p class="live-tag"><i class="dot"></i>En viaje ahora</p>
-        <h2 id="v-ltitle"></h2>
+        <div class="mtop"><h2 id="v-ltitle"></h2><button class="link" type="button" id="v-ledit">Editar</button></div>
         <p class="legend" id="v-lsub"></p>
         <div class="clock" id="v-clock">00:00:00</div>
         <p class="lstats" id="v-lstats"></p>
@@ -159,6 +159,25 @@
     <p class="legend" id="v-sinfo"></p>
     <div class="vmap tall" id="v-map2"></div>
     <p class="msg" id="v-smsg" role="status"></p>
+  </div>
+</div>
+
+<div class="sheet" id="e-sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="e-title">
+    <div class="mtop"><h2 id="e-title">Editar viaje</h2><button class="link" id="e-close" type="button">Cerrar</button></div>
+    <p class="legend" id="e-info"></p>
+    <div class="veh three" id="e-veh" role="radiogroup" aria-label="Vehículo del viaje"></div>
+    <div class="row2">
+      <label>Origen<input id="e-orig" list="v-places" maxlength="60" autocomplete="off"></label>
+      <button type="button" class="swap" id="e-swap" aria-label="Invertir origen y destino">⇄</button>
+      <label>Destino<input id="e-dest" list="v-places" maxlength="60" autocomplete="off"></label>
+    </div>
+    <div class="taxi-f">
+      <label id="e-kml">Kilómetros<input id="e-km" type="number" inputmode="decimal" min="0" step="0.1"></label>
+      <label id="e-vall">Valor del viaje<input id="e-valor" type="number" inputmode="numeric" min="0" step="1" placeholder="$"></label>
+    </div>
+    <p class="msg" id="e-msg" role="status"></p>
+    <div class="mbtns"><button class="btn ghost" id="e-cancel" type="button">Cancelar</button><button class="btn" id="e-save" type="button">Guardar cambios</button></div>
   </div>
 </div>
 
